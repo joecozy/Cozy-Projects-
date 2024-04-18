@@ -1,0 +1,120 @@
+Script for updating user accounts in Azure AD 
+
+# Import the AzureAD module if not already loaded 
+if (-not (Get-Module -Name AzureAD -ListAvailable)) { 
+    Install-Module -Name AzureAD -Force -AllowClobber 
+} 
+Import-Module AzureAD  
+# Define the Tenant ID for your Azure AD 
+$tenantId = "1a9f43fe-132b-48f0-9b4d-32875b57ca52" 
+# Connect to Azure AD using the specified Tenant ID 
+
+Connect-AzureAD -TenantId $tenantId 
+
+# Define the path to the CSV file containing the user details 
+
+$csvFilePath = "C:\Users\YusufOnileyan\Documents\Active users.csv" 
+
+# Read the CSV file 
+
+$userDetails = Import-Csv -Path $csvFilePath 
+
+# Loop through each row in the CSV and update user details 
+
+foreach ($userDetail in $userDetails) { 
+
+    $userUPN = $userDetail.UserPrincipalName 
+
+    # Check if the user UPN is not empty 
+
+    if (-not [string]::IsNullOrWhiteSpace($userUPN)) { 
+
+        # Check if the user exists in Azure AD 
+
+        $user = Get-AzureADUser -ObjectId $userUPN 
+
+        if ($user -ne $null) { 
+
+            $updateUser = $false 
+
+            # Check if the user doesn't have the specified parameters 
+
+            if (-not $user.JobTitle) { 
+
+                $user.JobTitle = $userDetail.JobTitle 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.Department) { 
+
+                $user.Department = $userDetail.Department 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.City) { 
+
+                $user.City = $userDetail.City 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.State) { 
+
+                $user.State = $userDetail.State 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.Country) { 
+
+                $user.Country = $userDetail.Country 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.GivenName) { 
+
+                $user.GivenName = $userDetail.FirstName 
+
+                $updateUser = $true 
+
+            } 
+
+            if (-not $user.Surname) { 
+
+                $user.Surname = $userDetail.LastName 
+
+                $updateUser = $true 
+
+            } 
+
+            # Update the user if any parameters were added 
+
+            if ($updateUser) { 
+
+                Set-AzureADUser -ObjectId $userUPN -JobTitle $user.JobTitle -Department $user.Department -City $user.City -State $user.State -Country $user.Country -GivenName $user.GivenName -Surname $user.Surname 
+
+                Write-Host "Updated user details for $userUPN" 
+
+            } 
+
+        } else { 
+
+            Write-Host "User with UPN $userUPN not found in Azure AD." 
+
+        } 
+
+    } 
+
+} 
+
+# Disconnect from Azure AD 
+
+Disconnect-AzureAD 
